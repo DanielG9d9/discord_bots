@@ -29,8 +29,8 @@ TestServer_ID = 1383138425351180422 # Test Server ID, use for testing on own ser
 NormalNeutralName_GENERAL = 1259529235496964177 # NNNR Server General Channel ID
 TestServer_GENERAL = 1383149398694952991 # Test Server General Channel ID
 
-Active_Server = TestServer_ID # Set the active server ID TestServer_ID or NormalNeutralName_ID
-Active_Channel = TestServer_GENERAL # Set the active channel ID TestServer_GENERAL or NormalNeutralName_GENERAL
+Active_Server = NormalNeutralName_ID # Set the active server ID TestServer_ID or NormalNeutralName_ID
+Active_Channel = NormalNeutralName_GENERAL # Set the active channel ID TestServer_GENERAL or NormalNeutralName_GENERAL
 
 #functions
 def save_user_trigger_counts():
