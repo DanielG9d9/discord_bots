@@ -1,0 +1,223 @@
+# Written by Daniel Gray
+
+from discord.ext import commands
+from dotenv import load_dotenv
+import datetime
+import discord
+import logging
+import json
+import os
+
+load_dotenv()
+
+token = os.getenv('DISCORD_TOKEN')
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# User variables
+trigger_words = ["bitcoin", " btc", "btc", "ethereum", " eth",'ltc', "dogecoin", "litecoin",]  # Add more as needed
+banned_words = ["ethereum", " eth", " ltc", "dogecoin", "litecoin", ]
+user_trigger_counts = {} # Dictionary to track user trigger counts
+USER_COUNTS_FILE = "user_trigger_counts.json"
+all_time_trigger_counts = {}
+ALL_TIME_USER_COUNTS_FILE = "all_time_user_trigger_counts.json"
+NormalNeutralName_ID = 1259530733433655503 # NNNR bitcoin channel ID
+TestServer_ID = 1383138425351180422 # Test Server ID, use for testing on own server (Bitcoin focused Server)
+NormalNeutralName_GENERAL = 1259529235496964177 # NNNR Server General Channel ID
+TestServer_GENERAL = 1383149398694952991 # Test Server General Channel ID
+
+Active_Server = TestServer_ID # Set the active server ID TestServer_ID or NormalNeutralName_ID
+Active_Channel = TestServer_GENERAL # Set the active channel ID TestServer_GENERAL or NormalNeutralName_GENERAL
+
+#functions
+def save_user_trigger_counts():
+    with open(USER_COUNTS_FILE, "w") as f:
+        json.dump(user_trigger_counts, f)
+
+def save_all_time_trigger_counts():
+    with open(ALL_TIME_USER_COUNTS_FILE, "w") as f:
+        json.dump(all_time_trigger_counts, f)
+def load_user_trigger_counts():
+    global user_trigger_counts
+    try:
+        with open(USER_COUNTS_FILE, "r") as f:
+            user_trigger_counts.update({int(k): v for k, v in json.load(f).items()})
+    except FileNotFoundError:
+        user_trigger_counts = {}
+
+def load_all_time_trigger_counts():
+    global all_time_trigger_counts
+    try:
+        with open(ALL_TIME_USER_COUNTS_FILE, "r") as f:
+            all_time_trigger_counts.update({int(k): v for k, v in json.load(f).items()})
+    except FileNotFoundError:
+        all_time_trigger_counts = {}
+# Event Handlers
+@bot.event
+async def on_ready():
+    load_user_trigger_counts()
+    load_all_time_trigger_counts()
+    channel_id = Active_Server  # Replace with your channel ID
+    channel = bot.get_channel(channel_id)
+    if channel:
+        await channel.send("Satoshi, reporting for duty and ready for bans!")
+    else:
+        print(f"Channel with ID {channel_id} not found.")
+    print(f"We are all Satoshi.")
+
+@bot.event
+async def on_member_join(member):
+    await member.send(f"Welcome to the server, {member.name}! I'll be watching you.")
+
+@bot.event
+async def on_member_leave(member):
+    channel_id = Active_Server  # Replace with your channel ID
+    channel = bot.get_channel(channel_id)
+    await channel.send(f"Suck it, {member.name}! You were a shitcoiner anyway!")
+
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    if message.content.startswith('!hello'):
+        await message.channel.send(f"Hello, {message.author.name}!")
+    
+    if any(word in message.content.lower() for word in trigger_words): # If any words are trigger words
+        if message.channel.id != Active_Server: # Bitcoin focused Server
+
+            user_id = message.author.id
+            user_trigger_counts[user_id] = user_trigger_counts.get(user_id, 0) + 1   # Update local counts
+            all_time_trigger_counts[user_id] = all_time_trigger_counts.get(user_id, 0) + 1   # Update all-time counts
+            save_user_trigger_counts()
+            save_all_time_trigger_counts()
+            print(f"User {message.author} has used a trigger word {user_trigger_counts[user_id]} times. \n Context: {message.content}")
+        
+            if any(word in message.content.lower() for word in banned_words):
+                if user_trigger_counts[user_id] >= 3:
+                    # If the user has used a banned word 3 times, delete the message and timeout the user
+                    await message.delete()
+                    timeout = user_trigger_counts[user_id] * 2 # Timeout duration is double the number of times the user has used a banned word.
+                    timeout_duration = datetime.timedelta(minutes=timeout) # Timeout time grows
+                    await message.channel.send(f"{message.author.mention} - Thank you for your message. You will now be timed out for using a banned word outside of <#bitcoin-chat-immutable>. {message.author.mention} has been timed out for {timeout} minutes.")
+                    try:
+                        print("Attempting to timeout user:", message.author.name)
+                        await message.author.timeout(timeout_duration, reason="Used banned word outside allowed channel.")
+                        print("User timed out successfully:", message.author.name)
+                        gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcWJ4eGk4NGE2NWhyZXd5cDN4eDEybzA5aTM1eWRmMzlwaWNlNjRwdiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/oCMd930DS9Jz0eSVxh/giphy.gif"
+                        await message.channel.send(gif_url_banned)
+                    except Exception as e:
+                        await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
+                else:
+                    await message.delete()
+                    await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! No shitcoining allowed, nerd.")
+            else:
+                if user_trigger_counts[user_id] >= 3:
+                    timeout = user_trigger_counts[user_id] * 2 # Timeout duration is double the number of times the user has used a banned word.
+                    timeout_duration = datetime.timedelta(minutes=timeout) # Timeout time grows
+                    await message.channel.send(f"{message.author.mention} - Thank you for your message. You will now be timed out for using a banned word outside of <#bitcoin-chat-immutable>. {message.author.mention} has been timed out for {timeout} minutes.")
+                    try:
+                        print("Attempting to timeout user:", message.author.name)
+                        await message.author.timeout(timeout_duration, reason="Used banned word outside allowed channel.")
+                        print("User timed out successfully:", message.author.name)
+                        gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcWJ4eGk4NGE2NWhyZXd5cDN4eDEybzA5aTM1eWRmMzlwaWNlNjRwdiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/oCMd930DS9Jz0eSVxh/giphy.gif"
+                        await message.channel.send(gif_url_banned)
+                    except Exception as e:
+                        await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
+                else:
+                    await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! Please refrain from bringing up Bitcoin outside of the designated <#bitcoin-chat-immutable> channel.")
+
+    # Process commands after handling the message
+    await bot.process_commands(message)
+
+@bot.command(name="triggers")
+async def triggers(ctx, member: discord.Member = None):
+    """Check how many trigger words a user has committed."""
+    if member is None:
+        member = ctx.author
+    count = user_trigger_counts.get(member.id, 0)
+    await ctx.send(f"{member.display_name} has triggered {count} time(s).")
+
+@bot.command(name="all_time_triggers")
+async def all_time_triggers(ctx, member: discord.Member = None):
+    """Check how many trigger words a user has committed in total."""
+    if member is None:
+        member = ctx.author
+    count = all_time_trigger_counts.get(member.id, 0)
+    await ctx.send(f"{member.display_name} has triggered {count} time(s) in total.")
+
+@bot.command(name="reset_triggers")
+async def reset_triggers(ctx, member: discord.Member = None):
+    """Admin can reset user trigger count (local)."""
+    if ctx.author.guild_permissions.administrator:
+        if member is None:
+            member = ctx.author
+        user_trigger_counts[member.id] = 0
+        save_user_trigger_counts()
+        await ctx.send(f"{member.display_name}'s trigger count has been reset.")
+    else:
+        await ctx.send("You do not have permission to use this command...")
+        gif_url = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3ZhMmtzd2g5Ymd6OGllbDhkdjBkYzl4d2M1dWFhMGV4cTdtaGt2eiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/L0coY9I1D2BnaKln9a/giphy.gif"
+        await ctx.send(gif_url)
+
+@bot.command(name="timeout_left")
+async def timeout_left(ctx, member: discord.Member = None):
+    """Check how much time is left on a user's timeout."""
+    if member is None:
+        member = ctx.author
+    if hasattr(member, "timed_out_until") and member.timed_out_until:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if member.timed_out_until > now:
+            remaining = member.timed_out_until - now
+            minutes, seconds = divmod(int(remaining.total_seconds()), 60)
+            await ctx.send(f"{member.display_name} is timed out for another {minutes} minute(s) and {seconds} second(s).")
+        else:
+            await ctx.send(f"{member.display_name} is not currently timed out.")
+    else:
+        await ctx.send(f"{member.display_name} is not currently timed out.")
+
+@bot.command(name="timeout")
+async def timeout(ctx, member: discord.Member = None, minutes: int = 1):
+    """
+    Timeout another user for "x" minutes.
+    Usage: !timeout @user 5
+    """
+    if member is None or member == ctx.author:
+        await ctx.send("You must mention another user to use this command.")
+        return
+    if minutes < 1 or minutes > 60:
+        await ctx.send("Timeout duration must be between 1 and 60 minutes.")
+        return
+    timeout_duration = datetime.timedelta(minutes=minutes)
+    try:
+        if ctx.author.guild_permissions.administrator:
+            await member.timeout(timeout_duration, reason=f"Timed out by admin for {minutes} minute(s).")
+            await ctx.send(f"{member.mention} has been timed out for {minutes} minute(s) by {ctx.author.mention}.")
+            return
+        
+        await ctx.author.timeout(timeout_duration, reason=f"Tried to timeout another user for {timeout_duration} minutes?!")
+        await ctx.send(f"{ctx.author.mention} tried to timeout {member.mention} for {minutes} minute(s), but timed themselves out instead!")
+        gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWo4cWc2dDlkNGxpeDBmdHczbzd3M2xuOHJuYzkwdGpjY2FhbWEzcCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/zNXvBiNNcrjDW/giphy.gif"
+        await ctx.send(gif_url_banned)
+    except Exception as e:
+        await ctx.send(f"Failed to timeout yourself: {e}")
+
+@bot.command(name="untimeout")
+@commands.has_permissions(administrator=True)
+async def untimeout(ctx, member: discord.Member = None):
+    """Admin can remove a user's timeout."""
+    if member is None:
+        await ctx.send("You must mention a user to remove their timeout.")
+        return
+    try:
+        await member.timeout(None, reason="Timeout removed by admin.")
+        await ctx.send(f"The divine council favors {member.display_name} with their blessing. {member.mention}, your timeout has been cut short.")
+        gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3prcHJrY3ZuZnNqajBxZ29pZGtqdWU5ZzdoanI0bXZtZGU0NWJ3NiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/tXTqLBYNf0N7W/giphy.gif"
+        await ctx.send(gif_url_banned)
+    except Exception as e:
+        await ctx.send(f"Failed to remove timeout: {e}")
+
+bot.run(token, log_handler=handler, log_level=logging.DEBUG)
