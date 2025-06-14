@@ -5,12 +5,15 @@ fi
 
 
 echo "You will need to enter the token for the bot to run."
-echo "Have you done that? (y/n)"
+echo "Have you set the DISCORD_TOKEN in the .env file? (y/n)"
 read -r answer
-if [[ "$answer" != "y" ]]; then
+if [[ "$answer" =~ ^[Nn]([Oo])?$ ]]; then
     echo "Please set the DISCORD_TOKEN in the .env file before proceeding."
+    echo "You can find the .env file in the project directory."
+    echo "Exiting the script."
     exit 1
 fi
+
 echo "########################################################################"
 echo "Preparing system to run the Discord bot..."
 echo "########################################################################"

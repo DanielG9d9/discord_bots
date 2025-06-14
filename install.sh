@@ -61,6 +61,4 @@ WantedBy=multi-user.target
 EOF
 
 echo "Installation complete!"
-cd /home/$USER/Desktop/
-
 echo "########################################################################"
