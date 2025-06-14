@@ -8,6 +8,7 @@ import discord
 import logging
 import json
 import os
+import asyncio
 
 load_dotenv()
 
@@ -64,10 +65,12 @@ async def on_ready():
     load_all_time_trigger_counts()
     channel_id = Active_Channel  # Replace with your channel ID
     channel = bot.get_channel(channel_id)
-    # if channel:
-    #     await channel.send("Satoshi, running on Render! Reporting for duty and ready to ban!")
-    # else:
-    #     print(f"Channel with ID {channel_id} not found.")
+    if channel:
+        await channel.send("Changelog: Adding prune_inactive_members_periodically function to auto remove the deep lurkers!")
+        gif_url = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMGd6Ym94MzNkdjA0cWd0bmt3dDJ3bDF2MGZmcHNkZ3Awcno4MTFjMyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/wlBS2Aif8eBvW/giphy.gif"
+        await channel.send(gif_url)
+    else:
+        print(f"Channel with ID {channel_id} not found.")
     print(f"We are all Satoshi.")
 
 @bot.event
@@ -243,5 +246,90 @@ async def untimeout(ctx, member: discord.Member = None):
 async def trigger_words_cmd(ctx):
     """List all trigger words."""
     await ctx.send("Trigger words: " + ", ".join(trigger_words))
+
+    async def prune_inactive_members_periodically():
+        await bot.wait_until_ready()
+        while not bot.is_closed():
+            for guild in bot.guilds:
+                cutoff_30 = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+                cutoff_7 = datetime.datetime.utcnow() - datetime.timedelta(days=23)
+                cutoff_1 = datetime.datetime.utcnow() - datetime.timedelta(days=29)
+                kicked = []
+                warned_7 = []
+                warned_1 = []
+                for member in guild.members:
+                    if member.bot or member.guild_permissions.administrator:
+                        continue
+                    last_activity = None
+
+                    # Check last message
+                    found_message = False
+                    for channel in guild.text_channels:
+                        async for message in channel.history(limit=None, after=cutoff_30):
+                            if message.author == member:
+                                last_activity = message.created_at
+                                found_message = True
+                                break
+                        if found_message:
+                            break
+
+                    # Check last reaction
+                    if not last_activity:
+                        found_reaction = False
+                        for channel in guild.text_channels:
+                            async for message in channel.history(limit=None, after=cutoff_30):
+                                for reaction in message.reactions:
+                                    users = [u async for u in reaction.users()]
+                                    if member in users:
+                                        last_activity = message.created_at
+                                        found_reaction = True
+                                        break
+                                if found_reaction:
+                                    break
+                            if found_reaction:
+                                break
+
+                    now = datetime.datetime.utcnow()
+                    if not last_activity:
+                        # No activity at all, treat as never active
+                        inactive_days = 31
+                    else:
+                        inactive_days = (now - last_activity).days
+
+                    # Warn at 23 days (7 days left)
+                    if inactive_days == 23:
+                        warned_7.append(member)
+                    # Warn at 29 days (1 day left)
+                    if inactive_days == 29:
+                        warned_1.append(member)
+                    # Kick at 30+ days
+                    if inactive_days >= 30:
+                        try:
+                            await member.kick(reason="Inactive for 30 days (no messages or reactions)")
+                            kicked.append(member.display_name)
+                        except Exception as e:
+                            logging.warning(f"Failed to kick {member.display_name}: {e}")
+
+                # Send warnings
+                for member in warned_7:
+                    try:
+                        await member.send(f"Hi {member.mention}, you have been inactive for 23 days in **{guild.name}**. If you don't send a message or react to anything in the next 7 days, you will be kicked from the server.")
+                    except Exception:
+                        pass
+                for member in warned_1:
+                    try:
+                        await member.send(f"Hi {member.mention}, you have been inactive for 29 days in **{guild.name}**. If you don't send a message or react to anything in the next 1 day, you will be kicked from the server.")
+                    except Exception:
+                        pass
+
+                # Announce kicked members
+                if kicked:
+                    log_channel = guild.system_channel or next((c for c in guild.text_channels if c.permissions_for(guild.me).send_messages), None)
+                    if log_channel:
+                        await log_channel.send(f"Kicked {len(kicked)} inactive members: {', '.join(kicked)}")
+
+            await asyncio.sleep(24 * 60 * 60)  # Run once every 24 hours
+
+    bot.loop.create_task(prune_inactive_members_periodically())
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
