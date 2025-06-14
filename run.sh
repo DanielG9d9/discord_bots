@@ -8,7 +8,7 @@ echo "You will need to enter the token in the .env for the bot to run."
 read -p "Have you set the DISCORD_TOKEN in the .env file? (y/n): " answer
 
 answer=$(echo "$answer" | xargs)  # Trim whitespace
-if [[ ! "$answer" =~ ^[Yy]$ ]]; then
+if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
     echo "Please set the DISCORD_TOKEN in the .env file before proceeding."
     echo "You can find the .env file in the project directory."
     echo "Exiting the script."
@@ -27,6 +27,7 @@ echo "Checking the status of the Discord bot service..."
 echo "########################################################################"
 sudo systemctl status discordbot.service
 
-
+echo "########################################################################"
 echo "If you see 'Active: active (running)', the bot is running successfully."
 echo "If you see 'Active: inactive (dead)' or 'failed', check the logs for errors."
+echo "#############################END#########################################"
