@@ -258,6 +258,7 @@ async def untimeout(ctx, member: discord.Member = None):
         await ctx.send(f"The divine council favors {member.display_name} with their blessing. {member.mention}, your timeout has been cut short.")
         gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3prcHJrY3ZuZnNqajBxZ29pZGtqdWU5ZzdoanI0bXZtZGU0NWJ3NiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/tXTqLBYNf0N7W/giphy.gif"
         await ctx.send(gif_url_banned)
+        #TODO: Time served event
     except Exception as e:
         await ctx.send(f"Failed to remove timeout: {e}")
 
