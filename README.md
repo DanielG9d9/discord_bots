@@ -8,3 +8,5 @@ Repository for my discord bots.
 3. Run the install.sh file (sudo) ``` sudo ./install.sh```
 4. From the project root folder - Setup the .env file with the bot token. ``` sudo nano .env```
 5. Run the run.sh file ```sudo ./run.sh```
+
+6. Stop the service with ```sudo systemctl stop discordbot.service```
