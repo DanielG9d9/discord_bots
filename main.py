@@ -1,4 +1,5 @@
 # Written by Daniel Gray
+# Running on Render.com <https://dashboard.render.com/web/srv-d169nm8gjchc73e7rdgg/settings>
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -18,8 +19,9 @@ intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # User variables
-trigger_words = ["bitcoin", " btc", "btc", "ethereum", " eth",'ltc', "dogecoin", "litecoin",]  # Add more as needed
-banned_words = ["ethereum", " eth", " ltc", "dogecoin", "litecoin", ]
+trigger_words = ["₿", "₿itcoin", "b i t c o i n", "b1tco1n", "b1tc01n","bitcoin", " btc", "btc", "ethereum", 
+                 " eth",'ltc', "dogecoin", "litecoin",]  # Add more as needed
+banned_words = ["ethereum", " eth", "e t h", "e t h e r e u m", " ltc", "dogecoin", "litecoin", ]
 user_trigger_counts = {} # Dictionary to track user trigger counts
 USER_COUNTS_FILE = "user_trigger_counts.json"
 all_time_trigger_counts = {}
@@ -60,10 +62,10 @@ def load_all_time_trigger_counts():
 async def on_ready():
     load_user_trigger_counts()
     load_all_time_trigger_counts()
-    channel_id = Active_Server  # Replace with your channel ID
+    channel_id = Active_Channel  # Replace with your channel ID
     channel = bot.get_channel(channel_id)
     if channel:
-        await channel.send("Satoshi, reporting for duty and ready for bans!")
+        await channel.send("Satoshi, running on Render! Reporting for duty and ready to ban!")
     else:
         print(f"Channel with ID {channel_id} not found.")
     print(f"We are all Satoshi.")
@@ -76,7 +78,7 @@ async def on_member_join(member):
 async def on_member_leave(member):
     channel_id = Active_Server  # Replace with your channel ID
     channel = bot.get_channel(channel_id)
-    await channel.send(f"Suck it, {member.name}! You were a shitcoiner anyway!")
+    await channel.send(f"Suck it, {member.name}!")
 
 @bot.event
 async def on_message(message):
@@ -110,7 +112,10 @@ async def on_message(message):
                         gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcWJ4eGk4NGE2NWhyZXd5cDN4eDEybzA5aTM1eWRmMzlwaWNlNjRwdiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/oCMd930DS9Jz0eSVxh/giphy.gif"
                         await message.channel.send(gif_url_banned)
                     except Exception as e:
-                        await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
+                        if message.author.guild_permissions.administrator:
+                            await message.channel.send(f"{message.author.mention} - You are an admin, but even admins should follow the rules! Don't abouse your power!")
+                        else:
+                            await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
                 else:
                     await message.delete()
                     await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! No shitcoining allowed, nerd.")
@@ -126,7 +131,11 @@ async def on_message(message):
                         gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcWJ4eGk4NGE2NWhyZXd5cDN4eDEybzA5aTM1eWRmMzlwaWNlNjRwdiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/oCMd930DS9Jz0eSVxh/giphy.gif"
                         await message.channel.send(gif_url_banned)
                     except Exception as e:
-                        await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
+                        if message.author.guild_permissions.administrator:
+                            await message.channel.send(f"{message.author.mention} - You are an admin, but even admins should follow the rules! Don't abouse your power!")
+                        else:
+                            await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
+                        
                 else:
                     await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! Please refrain from bringing up Bitcoin outside of the designated <#bitcoin-chat-immutable> channel.")
 
@@ -219,5 +228,10 @@ async def untimeout(ctx, member: discord.Member = None):
         await ctx.send(gif_url_banned)
     except Exception as e:
         await ctx.send(f"Failed to remove timeout: {e}")
+
+@bot.command(name="trigger_words")
+async def trigger_words_cmd(ctx):
+    """List all trigger words."""
+    await ctx.send("Trigger words: " + ", ".join(trigger_words))
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
