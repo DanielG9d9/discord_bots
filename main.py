@@ -64,10 +64,10 @@ async def on_ready():
     load_all_time_trigger_counts()
     channel_id = Active_Channel  # Replace with your channel ID
     channel = bot.get_channel(channel_id)
-    if channel:
-        await channel.send("Satoshi, running on Render! Reporting for duty and ready to ban!")
-    else:
-        print(f"Channel with ID {channel_id} not found.")
+    # if channel:
+    #     await channel.send("Satoshi, running on Render! Reporting for duty and ready to ban!")
+    # else:
+    #     print(f"Channel with ID {channel_id} not found.")
     print(f"We are all Satoshi.")
 
 @bot.event
