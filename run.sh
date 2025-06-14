@@ -7,6 +7,7 @@ echo "########################################################################"
 echo "You will need to enter the token in the .env for the bot to run."
 read -p "Have you set the DISCORD_TOKEN in the .env file? (y/n): " answer
 
+#TODO this not working lol, runs no matter what.
 answer=$(echo "$answer" | xargs)  # Trim whitespace
 if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
     echo "Please set the DISCORD_TOKEN in the .env file before proceeding."

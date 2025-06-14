@@ -214,20 +214,50 @@ async def timeout(ctx, member: discord.Member = None, minutes: int = 1):
     except Exception as e:
         await ctx.send(f"Failed to timeout yourself: {e}")
 
+# @bot.command(name="untimeout")
+# async def untimeout(ctx, member: discord.Member = None):
+#     """Admin or 'second officer' can remove a user's timeout."""
+#     if member is None:
+#         await ctx.send("You must mention a user to remove their timeout.")
+#         return
+#     try:
+#         if ctx.author.guild_permissions.administrator or any(role.name.lower() == "second officer" for role in ctx.author.roles):
+#             await member.timeout(None, reason="Timeout removed by admin or second officer.")
+#             await ctx.send(f"The divine council favors {member.display_name} with their blessing. {member.mention}, your timeout has been cut short.")
+#             gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3prcHJrY3ZuZnNqajBxZ29pZGtqdWU5ZzdoanI0bXZtZGU0NWJ3NiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/tXTqLBYNf0N7W/giphy.gif"
+#             await ctx.send(gif_url_banned)
+#         else:
+#             await ctx.send("You do not have permission to use this command.")
+#     except Exception as e:
+#         await ctx.send(f"Failed to remove timeout: {e}")
+
 @bot.command(name="untimeout")
 async def untimeout(ctx, member: discord.Member = None):
     """Admin or 'second officer' can remove a user's timeout."""
     if member is None:
         await ctx.send("You must mention a user to remove their timeout.")
         return
+
+    # Permission checks
+    is_admin = ctx.author.guild_permissions.administrator
+    is_second_officer = any(role.name.lower() == "second officer" for role in ctx.author.roles)
+    if not (is_admin or is_second_officer):
+        await ctx.send("You do not have permission to use this command.")
+        return
+
+    # Bot permission and hierarchy checks
+    if not ctx.guild.me.guild_permissions.moderate_members:
+        await ctx.send("I don't have permission to remove timeouts.")
+        return
+    if member.top_role >= ctx.guild.me.top_role:
+        await ctx.send("I can't remove the timeout for this user due to role hierarchy.")
+        return
+
     try:
-        if ctx.author.guild_permissions.administrator or any(role.name.lower() == "second officer" for role in ctx.author.roles):
-            await member.timeout(None, reason="Timeout removed by admin or second officer.")
-            await ctx.send(f"The divine council favors {member.display_name} with their blessing. {member.mention}, your timeout has been cut short.")
-            gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3prcHJrY3ZuZnNqajBxZ29pZGtqdWU5ZzdoanI0bXZtZGU0NWJ3NiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/tXTqLBYNf0N7W/giphy.gif"
-            await ctx.send(gif_url_banned)
-        else:
-            await ctx.send("You do not have permission to use this command.")
+        await member.timeout(None, reason="Timeout removed by admin or second officer.")
+        await ctx.send(f"The divine council favors {member.display_name} with their blessing. {member.mention}, your timeout has been cut short.")
+        gif_url_banned = "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3prcHJrY3ZuZnNqajBxZ29pZGtqdWU5ZzdoanI0bXZtZGU0NWJ3NiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/tXTqLBYNf0N7W/giphy.gif"
+        await ctx.send(gif_url_banned)
     except Exception as e:
         await ctx.send(f"Failed to remove timeout: {e}")
 
