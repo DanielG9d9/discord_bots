@@ -202,7 +202,7 @@ async def timeout(ctx, member: discord.Member = None, minutes: int = 1):
         return
     timeout_duration = datetime.timedelta(minutes=minutes)
     try:
-        if ctx.author.guild_permissions.administrator:
+        if ctx.author.guild_permissions.administrator or any(role.name.lower() == "second officer" for role in ctx.author.roles):
             await member.timeout(timeout_duration, reason=f"Timed out by admin for {minutes} minute(s).")
             await ctx.send(f"{member.mention} has been timed out for {minutes} minute(s) by {ctx.author.mention}.")
             return
