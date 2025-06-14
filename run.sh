@@ -3,11 +3,12 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+echo "########################################################################"
+echo "You will need to enter the token in the .env for the bot to run."
+read -p "Have you set the DISCORD_TOKEN in the .env file? (y/n): " answer
 
-echo "You will need to enter the token for the bot to run."
-echo "Have you set the DISCORD_TOKEN in the .env file? (y/n)"
-read -r answer
-if [[ "$answer" =~ ^[Nn]([Oo])?$ ]]; then
+answer=$(echo "$answer" | xargs)  # Trim whitespace
+if [[ ! "$answer" =~ ^[Yy]$ ]]; then
     echo "Please set the DISCORD_TOKEN in the .env file before proceeding."
     echo "You can find the .env file in the project directory."
     echo "Exiting the script."
@@ -15,13 +16,13 @@ if [[ "$answer" =~ ^[Nn]([Oo])?$ ]]; then
 fi
 
 echo "########################################################################"
-echo "Preparing system to run the Discord bot..."
+echo "Preparing system to run the bot..."
 echo "########################################################################"
 sudo systemctl daemon-reload
 sudo systemctl enable discordbot.service
 sudo systemctl start discordbot.service
-echo "Discord bot service started and enabled to run on boot."
 echo "########################################################################"
+echo "Discord bot service started and enabled to run on boot."
 echo "Checking the status of the Discord bot service..."
 echo "########################################################################"
 sudo systemctl status discordbot.service

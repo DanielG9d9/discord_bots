@@ -21,7 +21,6 @@ sudo apt-get install -y git python3-venv feh # Install dependencies
 cd /home/$USER/Desktop/discord_bots
 cat << EOF > .env # Create .env file for environment variables
 DISCORD_TOKEN=your_discord_token_here
-
 EOF
 
 echo "########################################################################"
