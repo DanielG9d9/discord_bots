@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import datetime
 import discord
 import logging
+import asyncio
+import pytz
 import json
 import os
 import asyncio
@@ -63,6 +65,8 @@ def load_all_time_trigger_counts():
 async def on_ready():
     load_user_trigger_counts()
     load_all_time_trigger_counts()
+    await bot.tree.sync() # This registers the slash commands with Discord
+    bot.loop.create_task(prune_inactive_members_periodically()) # Start the periodic inactive member pruning task
     channel_id = Active_Channel  # Replace with your channel ID
     channel = bot.get_channel(channel_id)
     # if channel:
@@ -72,9 +76,7 @@ async def on_ready():
     # else:
     #     print(f"Channel with ID {channel_id} not found.")
     print(f"We are all Satoshi.")
-    # Start the periodic inactive member pruning task
-    bot.loop.create_task(prune_inactive_members_periodically())
-
+    
 @bot.event
 async def on_member_join(member):
     await member.send(f"Welcome to the server, {member.name}! I'll be watching you.")
@@ -329,5 +331,27 @@ async def prune_inactive_members_periodically():
                     await log_channel.send(f"Kicked {len(kicked)} inactive members: {', '.join(kicked)}")
 
         await asyncio.sleep(24 * 60 * 60)  # Run once every 24 hours
+
+@bot.tree.command(name="last_active", description="Find the last time a member was active in the current channel.")
+async def last_active(interaction: discord.Interaction, member: discord.Member):
+    channel = interaction.channel
+    last_message = None
+
+    async for message in channel.history(limit=1000):
+        if message.author == member:
+            last_message = message
+            break
+
+    if last_message:
+        eastern = pytz.timezone('US/Eastern')
+        # Convert UTC datetime to US/Eastern, accounting for DST
+        timestamp = last_message.created_at.astimezone(eastern).strftime(DATE_FORMAT)
+        await interaction.response.send_message(
+            f"{member.display_name} was last active in this channel at {timestamp}."
+        )
+    else:
+        await interaction.response.send_message(
+            f"No recent activity found for {member.display_name} in this channel."
+        )
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)

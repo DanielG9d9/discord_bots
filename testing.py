@@ -6,11 +6,16 @@ from dotenv import load_dotenv
 import datetime
 import discord
 import logging
-import json
-import os
 import asyncio
+import json
+import pytz
+import os
+
 
 load_dotenv()
+
+# Date format for displaying timestamps
+DATE_FORMAT = '%m-%d-%Y %H:%M %Z'
 
 token = os.getenv('TESTING_TOKEN')
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -63,6 +68,7 @@ def load_all_time_trigger_counts():
 async def on_ready():
     load_user_trigger_counts()
     load_all_time_trigger_counts()
+    await bot.tree.sync() # This registers the slash commands with Discord
     channel_id = Active_Channel  # Replace with your channel ID
     channel = bot.get_channel(channel_id)
     # if channel:
@@ -71,9 +77,10 @@ async def on_ready():
     #     await channel.send(gif_url)
     # else:
     #     print(f"Channel with ID {channel_id} not found.")
-    print(f"We are all Satoshi.")
+    
     # Start the periodic inactive member pruning task
     bot.loop.create_task(prune_inactive_members_periodically())
+    print(f"We are all Satoshi.")
 
 @bot.event
 async def on_member_join(member):
@@ -330,46 +337,26 @@ async def prune_inactive_members_periodically():
 
         await asyncio.sleep(24 * 60 * 60)  # Run once every 24 hours
 
-@bot.command(name="last_active")
-async def last_active(ctx, member: discord.Member = None):
-    """Find the last time a user interacted (message or reaction) in any channel."""
-    if member is None:
-        member = ctx.author
+@bot.tree.command(name="last_active", description="Find the last time a member was active in the current channel.")
+async def last_active(interaction: discord.Interaction, member: discord.Member):
+    channel = interaction.channel
+    last_message = None
 
-    last_activity = None
+    async for message in channel.history(limit=1000):
+        if message.author == member:
+            last_message = message
+            break
 
-    # Check last message
-    for channel in ctx.guild.text_channels:
-        try:
-            async for message in channel.history(limit=100, oldest_first=False):
-                if message.author == member:
-                    if not last_activity or message.created_at > last_activity:
-                        last_activity = message.created_at
-                    break
-        except Exception:
-            continue
-
-    # Check last reaction
-    for channel in ctx.guild.text_channels:
-        try:
-            async for message in channel.history(limit=100, oldest_first=False):
-                for reaction in message.reactions:
-                    try:
-                        users = [u async for u in reaction.users()]
-                        if member in users:
-                            if not last_activity or message.created_at > last_activity:
-                                last_activity = message.created_at
-                            break
-                    except Exception:
-                        continue
-        except Exception:
-            continue
-
-    if last_activity:
-        # Convert UTC to EST (Eastern Standard Time)
-        est = last_activity.astimezone(datetime.timezone(datetime.timedelta(hours=-5)))
-        await ctx.send(f"{member.display_name} was last active on {est.strftime('%m-%d-%Y %H:%M EST')}.")
+    if last_message:
+        eastern = pytz.timezone('US/Eastern')
+        # Convert UTC datetime to US/Eastern, accounting for DST
+        timestamp = last_message.created_at.astimezone(eastern).strftime(DATE_FORMAT)
+        await interaction.response.send_message(
+            f"{member.display_name} was last active in this channel at {timestamp}."
+        )
     else:
-        await ctx.send(f"No recent activity found for {member.display_name}.")
+        await interaction.response.send_message(
+            f"No recent activity found for {member.display_name} in this channel."
+        )
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
