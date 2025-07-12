@@ -23,7 +23,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 # User variables
 trigger_words = ["₿", "₿itcoin", "b i t c o i n", "b1tco1n", "b1tc01n","bitcoin", " btc", "btc", "ethereum", 
-                 " eth",'ltc', "dogecoin", "litecoin",]  # Add more as needed
+                 " eth",'ltc', "dogecoin", "litecoin", "Ben"]  # Add more as needed
 banned_words = ["ethereum", " eth", "e t h", "e t h e r e u m", " ltc", "dogecoin", "litecoin", ]
 user_trigger_counts = {} # Dictionary to track user trigger counts
 USER_COUNTS_FILE = "user_trigger_counts.json"
@@ -108,7 +108,7 @@ async def on_message(message):
             if any(word in message.content.lower() for word in banned_words):
                 if user_trigger_counts[user_id] >= 3:
                     # If the user has used a banned word 3 times, delete the message and timeout the user
-                    await message.delete()
+                    # await message.delete()
                     timeout = user_trigger_counts[user_id] * 2 # Timeout duration is double the number of times the user has used a banned word.
                     timeout_duration = datetime.timedelta(minutes=timeout) # Timeout time grows
                     await message.channel.send(f"{message.author.mention} - Thank you for your message. You will now be timed out for using a banned word outside of <#bitcoin-chat-immutable>. {message.author.mention} has been timed out for {timeout} minutes.")
@@ -124,7 +124,11 @@ async def on_message(message):
                         else:
                             await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
                 else:
-                    await message.delete()
+                    # await message.delete()
+                    if " ben " in message.content.lower():
+                        await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! Are we still talking about this idiot?")
+                    else:
+                        await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! No shitcoining allowed, nerd.")
                     await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! No shitcoining allowed, nerd.")
             else:
                 if user_trigger_counts[user_id] >= 3:
