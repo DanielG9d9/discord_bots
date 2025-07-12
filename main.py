@@ -125,7 +125,7 @@ async def on_message(message):
                             await message.channel.send(f"Failed to timeout user: {e}. Consider yourself lucky, {message.author.mention}.")
                 else:
                     # await message.delete()
-                    if " ben " in message.content.lower():
+                    if " ben " in message.content.lower() and message.author.id == 1129502691568144405:
                         await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! Are we still talking about this idiot?")
                     else:
                         await message.channel.send(f"{message.author.mention} - Strike {user_trigger_counts[user_id]}! No shitcoining allowed, nerd.")
