@@ -1,5 +1,4 @@
 # Written by Daniel Gray
-# Running on Render.com <https://dashboard.render.com/web/srv-d169nm8gjchc73e7rdgg/settings>
 
 from discord.ext import commands
 from dotenv import load_dotenv
